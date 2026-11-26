@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+db.sqlite3
+staticfiles/
+.env
+frontend/node_modules/
+.venv/
+venv/
+.idea/
+.vscode/
+.populado
+db.sqlite3.populado
