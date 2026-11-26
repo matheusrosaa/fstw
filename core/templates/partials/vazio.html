@@ -1,0 +1,6 @@
+{% load ui %}<div class="card bg-base-100 border border-dashed border-base-300"><div class="card-body items-center text-center py-16">
+  <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center">{% icone cad.icone "w-8 h-8" %}</div>
+  <h2 class="font-bold text-lg mt-3">Nenhum{% if cad.artigo == "a" %}a{% endif %} {{ cad.singular }} cadastrad{{ cad.artigo }}</h2>
+  <p class="text-sm opacity-70 max-w-sm">Cadastre {{ cad.artigo }} primeir{{ cad.artigo }} {{ cad.singular }} para começar a usar {% if cad.artigo == "a" %}esta{% else %}este{% endif %} cadastro.</p>
+  <a href="{{ url_novo }}" class="btn btn-primary mt-4">{% icone "plus" %} Adicionar {{ cad.singular }}</a>
+</div></div>

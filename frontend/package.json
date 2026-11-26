@@ -1,0 +1,14 @@
+{
+  "name": "ensalamento-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tailwindcss -i entrada.css -o ../core/static/core/app.css --minify && cp node_modules/chart.js/dist/chart.umd.js ../core/static/core/chart.umd.js",
+    "watch": "tailwindcss -i entrada.css -o ../core/static/core/app.css --watch"
+  },
+  "devDependencies": {
+    "chart.js": "^4.4.1",
+    "daisyui": "^4.12.14",
+    "tailwindcss": "^3.4.17"
+  },
+  "private": true
+}

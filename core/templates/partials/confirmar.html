@@ -1,0 +1,20 @@
+{% load ui %}<dialog id="conf-{{ obj.pk }}" class="modal">
+  <div class="modal-box text-left whitespace-normal">
+    {% if acao == "excluir" %}
+      <h3 class="font-bold text-lg">Excluir {{ cad.singular }}?</h3>
+      <p class="py-3 text-sm opacity-80">{{ obj }} será removid{{ cad.artigo }}. Esta ação não pode ser desfeita.</p>
+    {% elif obj.ativo %}
+      <h3 class="font-bold text-lg">Desativar {{ cad.singular }} {{ obj }}?</h3>
+      <p class="py-3 text-sm opacity-80">{{ cad.singular|capfirst }} não será excluíd{{ cad.artigo }}: continua no histórico, mas deixa de aparecer nas novas operações. Você pode reativar quando quiser.</p>
+    {% else %}
+      <h3 class="font-bold text-lg">Reativar {{ cad.singular }} {{ obj }}?</h3>
+      <p class="py-3 text-sm opacity-80">{{ cad.singular|capfirst }} volta a aparecer nas operações do sistema.</p>
+    {% endif %}
+    <form method="post" action="{% url cad.chave|add:'_'|add:acao obj.pk %}" class="modal-action">
+      {% csrf_token %}<input type="hidden" name="proximo" value="{{ request.get_full_path }}">
+      <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancelar</button>
+      <button class="btn {% if acao == 'excluir' or obj.ativo %}btn-error{% else %}btn-primary{% endif %}">{% if acao == "excluir" %}Excluir{% elif obj.ativo %}Desativar{% else %}Reativar{% endif %}</button>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>fechar</button></form>
+</dialog>

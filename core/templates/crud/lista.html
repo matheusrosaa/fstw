@@ -1,0 +1,87 @@
+{% extends "app.html" %}{% load ui %}
+{% block titulo %}{{ cad.plural|capfirst }}{% endblock %}
+{% block conteudo %}
+{% include "partials/cabecalho.html" with titulo=cad.plural|capfirst subtitulo=cad.subtitulo url_botao=url_novo texto_botao="Nov"|add:cad.artigo|add:" "|add:cad.singular %}
+{% block antes_tabela %}{% endblock %}
+{% if total_geral == 0 %}
+  {% include "partials/vazio.html" %}
+{% else %}
+<form method="get" class="card bg-base-100 border border-base-300 mb-4"><div class="card-body p-4 flex-row flex-wrap items-center gap-3">
+  {% if ano %}<input type="hidden" name="ano" value="{{ ano }}">{% endif %}
+  <label class="input input-bordered flex items-center gap-2 w-full sm:w-64">
+    {% icone "search" "w-4 h-4 opacity-60" %}<input name="q" value="{{ q }}" class="grow" placeholder="Buscar por nome">
+  </label>
+  {% for f in filtros %}
+  <select name="{{ f.nome }}" class="select select-bordered" onchange="this.form.submit()" aria-label="{{ f.rotulo }}">
+    <option value="">{{ f.rotulo }}: Todos</option>
+    {% for v, t in f.opcoes %}<option value="{{ v }}" {% if v == f.valor %}selected{% endif %}>{{ f.rotulo }}: {{ t }}</option>{% endfor %}
+  </select>
+  {% endfor %}
+  {% if cad.ordens %}
+  <select name="ordem" class="select select-bordered" onchange="this.form.submit()" aria-label="Ordenar">
+    {% for v, t in cad.ordens %}<option value="{{ v }}" {% if v == ordem %}selected{% endif %}>Ordenar por: {{ t }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <button class="btn btn-ghost btn-sm sm:hidden">Filtrar</button>
+  {% if filtrando %}<a href="?{% if ano %}ano={{ ano }}{% endif %}" class="link link-primary text-sm font-semibold ml-auto">Limpar filtros</a>{% endif %}
+</div></form>
+
+<div class="card bg-base-100 border border-base-300 overflow-hidden">
+  {% if linhas %}
+  <div class="overflow-x-auto">
+  <table class="table">
+    <thead><tr>
+      {% for c in cad.colunas %}
+      <th class="whitespace-nowrap">{% if c.ordem %}<a href="{% com_param 'ordem' c.ordem|proxima_ordem:ordem %}" class="inline-flex items-center gap-1 hover:text-primary">{{ c.titulo }}
+        {% if ordem == c.ordem %}{% icone "up" "w-3.5 h-3.5" %}{% elif ordem == "-"|add:c.ordem %}{% icone "down" "w-3.5 h-3.5" %}{% else %}{% icone "sort" "w-3.5 h-3.5 opacity-40" %}{% endif %}</a>
+      {% else %}{{ c.titulo }}{% endif %}</th>
+      {% endfor %}
+      <th class="text-right">Ações</th>
+    </tr></thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr class="hover {% if l.obj.ativo is False %}opacity-60{% endif %}">
+        {% for cel in l.celulas %}<td class="{% if cel.col.tipo == 'forte' %}font-semibold{% endif %}">
+          {% if cel.col.tipo == "ativo" %}<span class="badge {% if cel.valor %}badge-success badge-outline{% else %}badge-ghost{% endif %} font-semibold">{{ cel.valor|yesno:"Ativo,Inativo" }}</span>
+          {% elif cel.col.tipo == "status" %}<span class="badge {% if cel.valor == 'publicado' %}badge-success{% else %}badge-warning{% endif %} badge-outline font-semibold">{{ l.obj.get_status_display }}</span>
+          {% elif cel.col.tipo == "tipo_cal" %}<span class="badge {% if cel.valor == 'Feriado' %}badge-warning{% elif cel.valor == 'Evento' %}badge-ghost{% else %}badge-info{% endif %} badge-outline">{{ cel.valor }}</span>
+          {% elif cel.col.tipo == "data" %}<span class="whitespace-nowrap">{{ cel.valor|date:"d/m/Y" }}</span>
+          {% else %}{{ cel.valor }}{% endif %}
+        </td>{% endfor %}
+        <td><div class="flex justify-end items-center gap-1 whitespace-nowrap">
+          {% for texto, rota in cad.acoes %}<a href="{% url rota l.obj.pk %}" class="btn btn-ghost btn-sm text-primary">{{ texto }}</a>{% endfor %}
+          <a href="{% url cad.chave|add:'_editar' l.obj.pk %}" class="btn btn-ghost btn-sm" title="Editar">{% icone "edit" "w-4 h-4" %}<span class="hidden xl:inline">Editar</span></a>
+          {% if cad.desativavel %}
+          <button type="button" class="btn btn-ghost btn-sm {% if l.obj.ativo %}text-error{% else %}text-success{% endif %}" onclick="document.getElementById('conf-{{ l.obj.pk }}').showModal()" title="{{ l.obj.ativo|yesno:'Desativar,Reativar' }}">{% icone "power" "w-4 h-4" %}<span class="hidden xl:inline">{{ l.obj.ativo|yesno:"Desativar,Reativar" }}</span></button>
+          {% include "partials/confirmar.html" with obj=l.obj acao="ativo" %}
+          {% elif cad.excluivel %}
+          <button type="button" class="btn btn-ghost btn-sm text-error" onclick="document.getElementById('conf-{{ l.obj.pk }}').showModal()" title="Excluir">{% icone "trash" "w-4 h-4" %}</button>
+          {% include "partials/confirmar.html" with obj=l.obj acao="excluir" %}
+          {% endif %}
+        </div></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="flex flex-wrap items-center justify-between gap-3 border-t border-base-300 px-4 py-3 text-sm">
+    <span class="opacity-70">Mostrando {{ pagina.start_index }}–{{ pagina.end_index }} de {{ pagina.paginator.count }} {{ cad.plural }}</span>
+    {% if pagina.paginator.num_pages > 1 %}
+    <div class="join">
+      {% if pagina.has_previous %}<a class="join-item btn btn-sm" href="?{{ params }}&pagina={{ pagina.previous_page_number }}">«</a>{% endif %}
+      {% for n in pagina.paginator.page_range %}<a class="join-item btn btn-sm {% if n == pagina.number %}btn-primary{% endif %}" href="?{{ params }}&pagina={{ n }}">{{ n }}</a>{% endfor %}
+      {% if pagina.has_next %}<a class="join-item btn btn-sm" href="?{{ params }}&pagina={{ pagina.next_page_number }}">»</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="p-10 text-center">
+    <div class="mx-auto w-14 h-14 rounded-full bg-base-200 flex items-center justify-center opacity-70">{% icone "search" "w-7 h-7" %}</div>
+    <p class="font-semibold mt-3">Nenhum resultado encontrado</p>
+    <p class="text-sm opacity-70">Tente outros termos ou limpe os filtros.</p>
+    <a href="?{% if ano %}ano={{ ano }}{% endif %}" class="btn btn-sm btn-outline mt-4">Limpar filtros</a>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

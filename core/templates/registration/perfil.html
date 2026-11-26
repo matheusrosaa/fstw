@@ -1,0 +1,21 @@
+{% extends "app.html" %}{% load ui %}
+{% block titulo %}Perfil{% endblock %}
+{% block conteudo %}
+{% include "partials/cabecalho.html" with titulo="Perfil" subtitulo="Seus dados de acesso e troca de senha." %}
+<div class="grid lg:grid-cols-3 gap-6 max-w-5xl">
+  <div class="card bg-base-100 border border-base-300"><div class="card-body">
+    <div class="avatar placeholder"><div class="bg-primary text-primary-content rounded-full w-14"><span class="text-xl">{{ user.username|slice:":1"|upper }}</span></div></div>
+    <p class="font-bold text-lg mt-2">{{ user.get_full_name|default:user.username }}</p>
+    <p class="text-sm opacity-70">{{ user.email|default:"Sem e-mail cadastrado" }}</p>
+    <p class="text-sm mt-2"><span class="badge badge-ghost">{% if user.is_superuser %}Administrador{% elif user.is_staff %}Gestor{% else %}Usuário{% endif %}</span></p>
+  </div></div>
+  <form method="post" class="card bg-base-100 border border-base-300 lg:col-span-2" novalidate><div class="card-body">
+    {% csrf_token %}
+    <h2 class="card-title text-base">Alterar senha</h2>
+    {% if request.GET.ok %}<div class="alert alert-success text-sm py-3">{% icone "check" %} Senha alterada com sucesso.</div>{% endif %}
+    {% if form.errors %}<div class="alert alert-error text-sm py-3">{% icone "x" %} Não foi possível alterar a senha. Corrija os campos destacados.</div>{% endif %}
+    {% for campo in form %}{% include "partials/campo.html" %}{% endfor %}
+    <div class="card-actions justify-end"><button class="btn btn-primary">Salvar nova senha</button></div>
+  </div></form>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% load static ui %}
+{% block titulo %}Acesso não autorizado{% endblock %}
+{% block corpo %}
+<div class="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+  <img src="{% static 'core/logo.png' %}" alt="Univille" class="h-9 mb-10">
+  <div class="w-20 h-20 rounded-full bg-error/10 text-error flex items-center justify-center">{% icone "lock" "w-10 h-10" %}</div>
+  <h1 class="text-2xl font-bold mt-6">Acesso não autorizado</h1>
+  <p class="opacity-70 mt-2 max-w-md">Você não tem permissão para acessar esta página. Entre com um usuário gestor do ensalamento.</p>
+  <form method="post" action="{% url 'logout' %}" class="mt-8">{% csrf_token %}<button class="btn btn-primary">Ir para o login</button></form>
+</div>
+{% endblock %}

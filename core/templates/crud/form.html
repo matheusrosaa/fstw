@@ -1,0 +1,58 @@
+{% extends "app.html" %}{% load ui %}
+{% block titulo %}{% if editando %}Editar{% else %}Adicionar{% endif %} {{ cad.singular }}{% endblock %}
+{% block conteudo %}
+{% with acao=editando|yesno:"Editar,Adicionar" %}
+<div class="mb-6">
+  <p class="text-xs opacity-60 mb-1"><a href="{% url cad.rota %}" class="hover:underline">{{ cad.plural|capfirst }}</a> / {{ acao }} {{ cad.singular }}</p>
+  <h1 class="text-2xl font-bold flex flex-wrap items-center gap-3">{{ acao }} {{ cad.singular }}
+    {% if obj.status %}<span class="badge {% if obj.publicado %}badge-success{% else %}badge-warning{% endif %} badge-outline">{{ obj.get_status_display }}</span>{% endif %}</h1>
+  <p class="text-sm opacity-70 mt-1">{% if editando %}Atualize{% else %}Preencha{% endif %} os dados d{{ cad.artigo }} {{ cad.singular }}. Os campos com <span class="text-error">*</span> são obrigatórios.</p>
+</div>
+{% endwith %}
+<div class="grid xl:grid-cols-[1fr_320px] gap-6 items-start">
+  <form method="post" novalidate class="card bg-base-100 border border-base-300"><div class="card-body gap-4">
+    {% csrf_token %}
+    {% if form.errors %}
+    <div role="alert" class="alert alert-error text-sm py-3">{% icone "x" %}<span>Não foi possível salvar {{ cad.artigo }} {{ cad.singular }}. Corrija os campos destacados abaixo.</span>
+      {% for e in form.non_field_errors %}<span class="block font-semibold">{{ e }}</span>{% endfor %}</div>
+    {% endif %}
+    <div class="grid md:grid-cols-2 gap-x-6 gap-y-4">
+      {% for campo in form %}
+        <div class="{% if campo.field.widget.input_type == 'checkbox' or campo.name == 'descricao' or campo.name == 'grade' or campo.name == 'cursos' %}md:col-span-2{% endif %}">{% include "partials/campo.html" %}</div>
+        {% if cad.chave == "ensalamentos" and campo.name == "status" %}
+        <div class="form-control w-full">
+          <label class="label pb-1"><span class="label-text font-medium">Data de fim</span></label>
+          <input id="data-fim" class="input input-bordered w-full" disabled value="{% if obj %}{{ obj.data_fim|date:'d/m/Y' }}{% else %}Preenchida automaticamente{% endif %}">
+          <p class="text-xs opacity-60 mt-1">Sábado da semana da data de início.</p>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="divider my-0"></div>
+    <div class="flex flex-wrap items-center gap-3">
+      {% if editando %}{% for texto, rota in cad.acoes %}<a href="{% url rota obj.pk %}" class="btn btn-outline">{{ texto }}</a>{% endfor %}{% endif %}
+      <a href="{% url cad.rota %}" class="btn ml-auto">Cancelar</a>
+      <button class="btn btn-primary min-w-28">Salvar</button>
+    </div>
+  </div></form>
+  <aside class="card bg-base-100 border border-base-300"><div class="card-body">
+    <h2 class="font-bold">Regras do cadastro</h2>
+    <ul class="space-y-2 text-sm opacity-80 list-disc pl-4 marker:text-primary">{% for r in cad.regras %}<li>{{ r }}</li>{% endfor %}</ul>
+  </div></aside>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if cad.chave == "ensalamentos" %}
+<script>
+  // Data de fim = sábado da semana da data de início; sugere o nome "dd/mm até dd/mm"
+  const ini = document.getElementById('id_data_inicio'), fim = document.getElementById('data-fim'), nome = document.getElementById('id_nome');
+  const fmt = d => String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
+  ini.addEventListener('change', () => {
+    if (!ini.value) return;
+    const d = new Date(ini.value + 'T12:00'), f = new Date(d); f.setDate(d.getDate() + 5);
+    fim.value = fmt(f) + '/' + f.getFullYear() + (d.getDay() !== 1 ? '  (a data de início deve ser segunda-feira)' : '');
+    if (!nome.value) nome.value = fmt(d) + ' até ' + fmt(f);
+  });
+</script>
+{% endif %}
+{% endblock %}

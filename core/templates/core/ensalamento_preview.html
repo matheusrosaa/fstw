@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load static ui %}
+{% block titulo %}Ensalamento {{ ens.nome }}{% endblock %}
+{% block corpo %}
+<div class="max-w-7xl mx-auto p-4 sm:p-8">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <img src="{% static 'core/logo.png' %}" alt="Univille" class="h-9 mb-6">
+      <h1 class="text-2xl sm:text-3xl font-bold">Ensalamento {{ ens.nome }}</h1>
+      <p class="text-sm opacity-70 mt-1">{{ ens.grade.curso }} · {{ ens.grade }} · {{ ens.data_inicio|date:"d/m/Y" }} a {{ ens.data_fim|date:"d/m/Y" }}</p>
+    </div>
+    <div class="flex items-center gap-3 no-print">
+      <span class="badge {% if ens.publicado %}badge-success{% else %}badge-warning{% endif %} badge-outline badge-lg font-semibold">{{ ens.get_status_display }}</span>
+      <button class="btn btn-outline" onclick="window.print()">{% icone "print" "w-4 h-4" %} Imprimir</button>
+    </div>
+  </div>
+  <div class="mt-6 overflow-x-auto rounded-xl border border-base-300 bg-base-100">
+    <table class="table min-w-[900px]">
+      <thead><tr class="bg-menu text-white"><th>Dia</th><th>Horário</th>{% for t in turmas %}<th>{{ t.nome }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for l in linhas %}
+        <tr class="{% if l.primeira %}border-t-2 border-base-300{% endif %}">
+          {% if l.primeira %}<th rowspan="2" class="bg-primary/5 text-primary align-middle">{{ l.dia_nome }}</th>{% endif %}
+          <td class="whitespace-nowrap opacity-70">{{ l.horario_nome }}</td>
+          {% for c in l.celulas %}<td>{% if c.aula %}
+            <div class="flex items-center justify-between gap-3">
+              <div><p class="font-bold text-sm">{{ c.aula.unidade.codigo }} – {{ c.aula.unidade.nome }}</p><p class="text-xs opacity-70">{{ c.aula.professor }}</p></div>
+              {% if c.alocacao %}<span class="badge badge-primary badge-lg font-bold whitespace-nowrap shrink-0">{{ c.alocacao.sala }}</span>{% else %}<span class="text-xs opacity-50 whitespace-nowrap">A definir</span>{% endif %}
+            </div>{% endif %}</td>{% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-xs opacity-60 mt-4">Atualizado em {{ ens.atualizado_em|date:"d/m/Y \à\s H:i" }}</p>
+</div>
+{% endblock %}

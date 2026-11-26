@@ -1,0 +1,69 @@
+{% extends "app.html" %}{% load static ui %}
+{% block titulo %}Dashboard{% endblock %}
+{% block conteudo %}
+<div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold">Olá, {{ user.first_name|default:user.username }}!</h1>
+    <p class="text-sm opacity-70 mt-1">Acompanhe a ocupação das salas na semana atual.</p>
+  </div>
+  <div class="rounded-lg border border-base-300 bg-base-100 px-4 py-2 text-sm flex items-center gap-2">
+    {% icone "cal" "w-4 h-4 text-primary" %}
+    <span><span class="opacity-60">Semestre</span> <strong>{{ semestre.nome|default:"—" }}</strong> · {{ semana }}</span>
+  </div>
+</div>
+<div class="grid xl:grid-cols-3 gap-6">
+  <section class="card bg-base-100 border border-base-300 xl:col-span-2"><div class="card-body">
+    <h2 class="card-title text-base">Laboratórios disponíveis por dia e horário</h2>
+    <p class="text-xs opacity-60 -mt-1">{{ total_labs }} laboratórios ativos · semana {{ semana }}</p>
+    <div class="h-72"><canvas id="grafLabs"></canvas></div>
+  </div></section>
+  <section class="card bg-base-100 border border-base-300"><div class="card-body">
+    <h2 class="card-title text-base">Salas por tipo</h2>
+    <div class="h-72"><canvas id="grafTipos"></canvas></div>
+  </div></section>
+  <section class="card bg-base-100 border border-base-300 xl:col-span-3"><div class="card-body">
+    <div class="flex items-center justify-between">
+      <h2 class="card-title text-base">Calendário acadêmico</h2>
+      <a href="{% url 'calendario_lista' %}" class="link link-primary text-sm font-semibold">Ver calendário completo</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="table">
+        <thead><tr><th>Data</th><th>Dia da semana</th><th>Descrição</th></tr></thead>
+        <tbody>
+        {% for d in proximas %}
+          <tr><td class="font-semibold whitespace-nowrap">{{ d.data|date:"d/m/Y" }}</td><td>{{ d.dia_semana }}</td>
+              <td>{{ d.descricao }} {% if d.feriado %}<span class="badge badge-warning badge-sm ml-1">Feriado</span>{% elif d.reposicao %}<span class="badge badge-info badge-sm ml-1">Reposição</span>{% endif %}</td></tr>
+        {% empty %}
+          <tr><td colspan="3" class="text-center opacity-60 py-6">Nenhuma data nas próximas semanas.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div></section>
+</div>
+{{ series|json_script:"dados-series" }}{{ dias|json_script:"dados-dias" }}{{ por_tipo|json_script:"dados-tipos" }}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'core/chart.umd.js' %}"></script>
+<script>
+  const css = getComputedStyle(document.documentElement);
+  const primaria = `oklch(${css.getPropertyValue('--p').trim()})`;
+  const series = JSON.parse(document.getElementById('dados-series').textContent);
+  const dias = JSON.parse(document.getElementById('dados-dias').textContent);
+  const tipos = JSON.parse(document.getElementById('dados-tipos').textContent);
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  new Chart(document.getElementById('grafLabs'), {
+    type: 'bar',
+    data: { labels: dias, datasets: series.map((s, i) => ({ label: s.rotulo, data: s.valores, borderRadius: 6,
+            backgroundColor: i === 0 ? primaria : '#8cc9a8' })) },
+    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+               plugins: { legend: { position: 'bottom' } } }
+  });
+  new Chart(document.getElementById('grafTipos'), {
+    type: 'doughnut',
+    data: { labels: tipos.map(t => t.rotulo), datasets: [{ data: tipos.map(t => t.valor),
+            backgroundColor: [primaria, '#8cc9a8', '#f2b84b'] }] },
+    options: { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom' } } }
+  });
+</script>
+{% endblock %}

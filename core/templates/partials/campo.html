@@ -1,0 +1,17 @@
+{% load ui %}{% if campo.field.widget.input_type == "checkbox" and not campo.field.widget.allow_multiple_selected %}
+<label class="flex items-center justify-between gap-4 rounded-lg border border-base-300 bg-base-200/50 p-4 cursor-pointer">
+  <span><span class="font-semibold block">{{ campo.label }}</span>{% if campo.help_text %}<span class="text-xs opacity-60">{{ campo.help_text }}</span>{% endif %}</span>
+  {{ campo }}
+</label>
+{% else %}
+<div class="form-control w-full">
+  <label class="label pb-1" for="{{ campo.id_for_label }}"><span class="label-text font-medium">{{ campo.label }}{% if campo.field.required %} <span class="text-error">*</span>{% endif %}</span></label>
+  {% if campo.field.widget.allow_multiple_selected %}
+    <div class="flex flex-wrap gap-x-5 gap-y-2 rounded-lg border {% if campo.errors %}border-error{% else %}border-base-300{% endif %} p-3">
+      {% for op in campo %}<label class="flex items-center gap-2 text-sm cursor-pointer">{{ op.tag }} {{ op.choice_label }}</label>{% endfor %}
+    </div>
+  {% else %}{{ campo }}{% endif %}
+  {% if campo.errors %}<p class="text-error text-xs mt-1 flex items-center gap-1">{% icone "warn" "w-3.5 h-3.5" %} {{ campo.errors.0 }}</p>
+  {% elif campo.help_text %}<p class="text-xs opacity-60 mt-1">{{ campo.help_text }}</p>{% endif %}
+</div>
+{% endif %}

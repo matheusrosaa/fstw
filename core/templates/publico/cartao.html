@@ -1,0 +1,10 @@
+<div class="flex items-center justify-between gap-3 rounded-xl border border-base-300 bg-base-100 {% if compacto %}p-3 mb-2{% else %}p-4{% endif %} border-l-4 border-l-primary">
+  <div class="min-w-0">
+    {% if modo == "curso" %}<p class="text-xs font-semibold opacity-60">{{ e.aula.turma }} · {{ e.aula.turma.quantidade_alunos }} alunos</p>{% endif %}
+    <p class="font-bold text-primary {% if not compacto %}text-base{% else %}text-sm{% endif %}">{{ e.aula.unidade.codigo }} – {{ e.aula.unidade.nome }}</p>
+    <p class="text-sm opacity-75">{% if modo == "professor" %}{{ e.aula.turma }} · {{ e.aula.turma.quantidade_alunos }} alunos{% else %}Professor(a) {{ e.aula.professor }}{% endif %}</p>
+    {% if e.sala and not compacto %}<p class="text-xs opacity-50 mt-1">{{ e.sala.get_tipo_display }} · {{ e.sala.capacidade }} lugares</p>{% endif %}
+  </div>
+  {% if e.sala %}<span class="shrink-0 rounded-lg bg-primary text-primary-content font-bold {% if compacto %}px-3 py-1.5 text-sm{% else %}px-4 py-3 text-lg{% endif %}">{{ e.sala }}</span>
+  {% else %}<span class="shrink-0 rounded-lg border border-dashed border-base-300 px-3 py-1.5 text-xs opacity-60">A definir</span>{% endif %}
+</div>

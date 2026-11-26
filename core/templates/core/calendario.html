@@ -1,0 +1,33 @@
+{% extends "crud/lista.html" %}{% load ui %}
+{% block antes_tabela %}
+<section class="card bg-base-100 border border-base-300 mb-6"><div class="card-body">
+  <div class="flex flex-wrap items-center gap-3">
+    <div class="join">
+      <a class="join-item btn btn-sm" href="?ano={{ ano_ant }}" aria-label="Ano anterior">«</a>
+      <span class="join-item btn btn-sm btn-active pointer-events-none">{{ ano }}</span>
+      <a class="join-item btn btn-sm" href="?ano={{ ano_prox }}" aria-label="Próximo ano">»</a>
+    </div>
+    <div class="flex flex-wrap gap-4 text-xs ml-auto items-center">
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-warning"></span>Feriado</span>
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-info"></span>Reposição de aula</span>
+      <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-primary/30"></span>Evento</span>
+      {% if calendario_url %}<a href="{{ calendario_url }}" target="_blank" rel="noopener" class="link link-primary font-semibold inline-flex items-center gap-1">Calendário oficial (PDF) {% icone "ext" "w-3.5 h-3.5" %}</a>{% endif %}
+    </div>
+  </div>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 mt-2">
+    {% for m in meses %}
+    <div class="rounded-lg border border-base-300 p-3">
+      <p class="font-semibold text-sm mb-2">{{ m.nome }}</p>
+      <div class="grid grid-cols-7 text-center text-[11px] gap-y-1">
+        {% for d in "DSTQQSS" %}<span class="opacity-50 font-semibold">{{ d }}</span>{% endfor %}
+        {% for semana in m.semanas %}{% for d in semana %}
+          <span class="mx-auto w-6 h-6 leading-6 rounded-full
+            {% if d.tipo == 'feriado' %}bg-warning text-warning-content font-bold{% elif d.tipo == 'reposicao' %}bg-info text-info-content font-bold{% elif d.tipo == 'evento' %}bg-primary/30 font-bold{% elif d.hoje %}ring-1 ring-primary{% endif %}"
+            {% if d.item %}title="{{ d.item.descricao }}"{% endif %}>{{ d.dia }}</span>
+        {% endfor %}{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div></section>
+{% endblock %}

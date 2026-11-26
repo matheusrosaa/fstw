@@ -1,0 +1,61 @@
+{% extends "base.html" %}{% load static ui %}
+{% block corpo %}
+<div class="drawer lg:drawer-open">
+  <input id="menu-lateral" type="checkbox" class="drawer-toggle">
+  <div class="drawer-content flex flex-col min-h-screen">
+    <header class="navbar bg-base-100 border-b border-base-300 px-4 lg:px-6 gap-3 no-print">
+      <label for="menu-lateral" class="btn btn-ghost btn-square lg:hidden" aria-label="Abrir menu">{% icone "menu" %}</label>
+      <form action="{% url 'ensalamentos_lista' %}" class="flex-1 max-w-md">
+        <label class="input input-bordered input-sm flex items-center gap-2">
+          {% icone "search" "w-4 h-4 opacity-60" %}<input name="q" class="grow" placeholder="Buscar ensalamento…">
+        </label>
+      </form>
+      <div class="flex-none ml-auto dropdown dropdown-end">
+        <div tabindex="0" role="button" class="btn btn-ghost gap-2 normal-case">
+          <div class="avatar placeholder"><div class="bg-primary text-primary-content rounded-full w-8"><span class="text-sm">{{ user.get_short_name|default:user.username|slice:":1"|upper }}</span></div></div>
+          <span class="hidden sm:inline text-sm font-medium">{{ user.get_full_name|default:user.username }}</span>
+        </div>
+        <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box shadow w-48 z-20 mt-2">
+          <li><a href="{% url 'perfil' %}">{% icone "user" "w-4 h-4" %} Perfil</a></li>
+          <li><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="flex items-center gap-2 w-full">{% icone "logout" "w-4 h-4" %} Sair</button></form></li>
+        </ul>
+      </div>
+    </header>
+    <main class="flex-1 p-4 lg:p-6">
+      {% if messages %}
+      <div class="space-y-2 mb-4 no-print">
+        {% for m in messages %}
+        <div role="alert" class="alert {% if m.tags == 'error' %}alert-error{% elif m.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %} py-3 text-sm">
+          {% if m.tags == 'error' %}{% icone "x" %}{% elif m.tags == 'warning' %}{% icone "warn" %}{% else %}{% icone "check" %}{% endif %}
+          <span>{{ m }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block conteudo %}{% endblock %}
+    </main>
+  </div>
+  <div class="drawer-side z-30 no-print">
+    <label for="menu-lateral" class="drawer-overlay" aria-label="Fechar menu"></label>
+    <aside class="bg-menu text-white w-64 min-h-full flex flex-col">
+      <a href="{% url 'dashboard' %}" class="px-6 py-6 block"><img src="{% static 'core/logo-branco.png' %}" alt="Univille" class="h-9"></a>
+      {% with n=request.resolver_match.url_name %}
+      <ul class="menu px-3 gap-1 text-[15px] flex-1">
+        <li><a href="{% url 'dashboard' %}" class="{% if n == 'dashboard' %}bg-white/20 font-semibold{% else %}hover:bg-white/10{% endif %}">{% icone "home" %} Dashboard</a></li>
+        <li class="menu-title text-white/50 text-xs uppercase tracking-wider mt-2">Cadastros</li>
+        {% for chave, icon, texto in menu_cadastros %}
+        <li><a href="{% url chave|add:'_lista' %}" class="{% if n|slice:':4' == chave|slice:':4' %}bg-white/20 font-semibold{% else %}hover:bg-white/10{% endif %}">{% icone icon %} {{ texto }}</a></li>
+        {% endfor %}
+        <li class="menu-title text-white/50 text-xs uppercase tracking-wider mt-2">Ensalamento</li>
+        <li><a href="{% url 'ensalamentos_lista' %}" class="{% if n|slice:':4' == 'ensa' %}bg-white/20 font-semibold{% else %}hover:bg-white/10{% endif %}">{% icone "door" %} Ensalamentos</a></li>
+        {% if user.is_superuser %}<li class="mt-2"><a href="{% url 'admin:auth_user_changelist' %}" class="hover:bg-white/10">{% icone "users" %} Usuários</a></li>{% endif %}
+      </ul>
+      {% endwith %}
+      <ul class="menu px-3 pb-6 gap-1 text-[15px] border-t border-white/10 pt-3">
+        <li><a href="{% url 'perfil' %}" class="hover:bg-white/10">{% icone "user" %} Perfil</a></li>
+        <li><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="flex items-center gap-2 w-full">{% icone "logout" %} Sair</button></form></li>
+      </ul>
+    </aside>
+  </div>
+</div>
+{% endblock %}

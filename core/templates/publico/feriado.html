@@ -1,0 +1,6 @@
+{% load ui %}<div class="rounded-xl border border-warning/50 bg-warning/10 {% if compacto %}p-3 mt-2{% else %}p-6{% endif %} flex items-start gap-4">
+  {% icone "cal" "w-7 h-7 text-warning shrink-0" %}
+  <div><span class="badge badge-warning">Feriado</span>
+    <p class="font-bold {% if compacto %}text-base mt-1{% else %}text-2xl mt-2{% endif %}">{{ dia.feriado.descricao }}</p>
+    <p class="text-sm opacity-80">{{ dia.nome }}, {{ dia.data|date:"d/m/Y" }} — não há aulas. O ensalamento não é exibido em feriados.</p></div>
+</div>

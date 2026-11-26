@@ -1,0 +1,194 @@
+{% extends "app.html" %}{% load ui %}
+{% block titulo %}Ensalamento {{ ens.nome }}{% endblock %}
+{% block conteudo %}
+<div class="flex flex-wrap items-start justify-between gap-4 mb-5">
+  <div>
+    <p class="text-xs opacity-60 mb-1"><a href="{% url 'ensalamentos_lista' %}" class="hover:underline">Ensalamentos</a> / {{ ens.nome }}</p>
+    <h1 class="text-2xl font-bold">Ensalamento {{ ens.nome }}</h1>
+    <p class="text-sm opacity-70 mt-1">Clique em uma aula para informar ou alterar a sala.</p>
+  </div>
+  <div class="flex flex-wrap gap-4 text-xs items-center">
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-success/20 border border-success"></span>Sala informada</span>
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full bg-warning/30 border border-warning"></span>Não comporta a turma</span>
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded-full border border-dashed border-base-content/40"></span>Sem sala</span>
+  </div>
+</div>
+<div class="card bg-base-100 border border-base-300 mb-4"><div class="card-body p-4 grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
+  <div><p class="opacity-60 text-xs">Nome</p><p class="font-bold">{{ ens.nome }}</p></div>
+  <div><p class="opacity-60 text-xs">Curso</p><p class="font-bold">{{ ens.grade.curso }}</p></div>
+  <div><p class="opacity-60 text-xs">Grade horária</p><p class="font-bold">{{ ens.grade }}</p></div>
+  <div><p class="opacity-60 text-xs">Período</p><p class="font-bold">{{ ens.data_inicio|date:"d/m/Y" }} – {{ ens.data_fim|date:"d/m/Y" }}</p></div>
+  <div><p class="opacity-60 text-xs">Status</p><span class="badge {% if ens.publicado %}badge-success{% else %}badge-warning{% endif %} badge-outline font-semibold">{{ ens.get_status_display }}</span></div>
+  <div><p class="opacity-60 text-xs">Ativo</p><span class="badge {% if ens.ativo %}badge-success{% else %}badge-ghost{% endif %} badge-outline font-semibold">{{ ens.ativo|yesno:"Ativo,Inativo" }}</span></div>
+</div></div>
+<div class="flex flex-wrap items-center gap-3 mb-4">
+  <div class="flex items-center gap-3 text-sm font-semibold mr-auto">Salas informadas: {{ informadas }} de {{ total }} aulas
+    <progress class="progress progress-primary w-40" value="{{ percentual }}" max="100"></progress></div>
+  <a href="{% url 'ensalamentos_editar' ens.pk %}" class="btn btn-outline btn-sm">Editar dados</a>
+  <a href="{% url 'ensalamento_preview' ens.pk %}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">{% icone "ext" "w-4 h-4" %} Preview</a>
+  <button type="button" class="btn btn-outline btn-sm" onclick="abrirCopia()">{% icone "copy" "w-4 h-4" %} Copiar para a próxima semana</button>
+</div>
+
+<div class="card bg-base-100 border border-base-300 overflow-x-auto">
+  <table class="table table-sm min-w-[960px]">
+    <thead><tr class="bg-base-200"><th class="w-24">Dia</th><th class="w-32">Horário</th>{% for t in turmas %}<th>{{ t.nome }}<span class="block font-normal opacity-60">{{ t.quantidade_alunos }} alunos</span></th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr class="{% if l.primeira %}border-t-2 border-base-300{% endif %}">
+        {% if l.primeira %}<th rowspan="2" class="bg-primary/5 text-primary align-middle">{{ l.dia_nome }}</th>{% endif %}
+        <td class="whitespace-nowrap opacity-70">{{ l.horario_nome }}</td>
+        {% for c in l.celulas %}<td>
+          {% if c.aula %}
+          <button type="button" class="w-full text-left rounded-lg px-2 py-1.5 hover:bg-base-200 focus:outline-primary" onclick="abrirSala({{ c.aula.pk }})">
+            <span class="text-sm font-bold text-primary">{{ c.aula.unidade.codigo }}</span> <span class="text-xs opacity-60">· {{ c.aula.professor }}</span>
+            <span class="block mt-1">
+            {% if c.alocacao %}
+              <span class="badge {% if c.nao_comporta %}badge-warning{% else %}bg-success/15 border-success/40 text-success{% endif %} gap-1 font-semibold">
+                {% if c.nao_comporta %}{% icone "warn" "w-3.5 h-3.5" %}{% endif %}{{ c.alocacao.sala }} · {{ c.turma.quantidade_alunos }}/{{ c.alocacao.sala.capacidade }}</span>
+            {% else %}
+              <span class="badge badge-outline border-dashed gap-1 opacity-70">{% icone "plus" "w-3 h-3" %} Informar sala</span>
+            {% endif %}</span>
+          </button>
+          {% else %}<span class="opacity-30 text-xs px-2">—</span>{% endif %}
+        </td>{% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Janela: informar sala -->
+<dialog id="janela-sala" class="modal">
+  <div class="modal-box max-w-xl">
+    <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="Fechar">{% icone "x" "w-4 h-4" %}</button></form>
+    <h3 class="font-bold text-lg">Informar sala</h3>
+    <p class="text-xs opacity-60">Ensalamento {{ ens.nome }}</p>
+    <div id="sala-contexto" class="rounded-lg bg-base-200/60 border border-base-300 p-4 my-4 text-sm"></div>
+    <form id="form-sala" method="post">
+      {% csrf_token %}
+      <label class="input input-bordered input-sm flex items-center gap-2 mb-2">{% icone "search" "w-4 h-4 opacity-60" %}<input id="busca-sala" class="grow" placeholder="Buscar sala"></label>
+      <div id="lista-salas" class="max-h-64 overflow-y-auto rounded-lg border border-base-300 divide-y divide-base-200"></div>
+      <div id="sala-feedback" class="mt-3 space-y-1"></div>
+      <div class="modal-action items-center">
+        <span id="aviso-salvar" class="text-xs font-semibold text-amber-700 mr-auto"></span>
+        <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancelar</button>
+        <button id="btn-salvar-sala" class="btn btn-primary" disabled>Salvar</button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>fechar</button></form>
+</dialog>
+
+<!-- Janela: copiar semana -->
+<dialog id="janela-copia" class="modal">
+  <div class="modal-box max-w-xl">
+    <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="Fechar">{% icone "x" "w-4 h-4" %}</button></form>
+    <h3 class="font-bold text-lg">Copiar para a próxima semana</h3>
+    <p class="text-xs opacity-60">Cria um novo ensalamento em rascunho com as salas copiadas.</p>
+    <form method="post" action="{% url 'ensalamento_copiar' ens.pk %}" class="space-y-3 mt-4" novalidate>
+      {% csrf_token %}
+      <div class="form-control"><label class="label pb-1"><span class="label-text font-medium">Copiar de</span></label>
+        <input class="input input-bordered" disabled value="{{ ens.nome }} ({{ ens.data_inicio|date:'d/m/Y' }} – {{ ens.data_fim|date:'d/m/Y' }})"></div>
+      <div class="form-control"><label class="label pb-1" for="data-destino"><span class="label-text font-medium">Segunda-feira de destino <span class="text-error">*</span></span></label>
+        <input id="data-destino" type="date" name="data_destino" class="input input-bordered" value="{{ destino_padrao|date:'Y-m-d' }}">
+        <p id="copia-ajuda" class="text-xs opacity-60 mt-1">Por padrão, a próxima segunda-feira. Escolha outra data se precisar.</p></div>
+      <div id="copia-resumo"></div>
+      <div class="modal-action">
+        <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancelar</button>
+        <button id="btn-copiar" class="btn btn-primary" disabled>{% icone "copy" "w-4 h-4" %} Copiar ensalamento</button>
+      </div>
+    </form>
+  </div>
+  <form method="dialog" class="modal-backdrop"><button>fechar</button></form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const BASE = "{% url 'ensalamento_detalhe' ens.pk %}";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const linhaFeedback = (tipo, texto) => {
+  const cor = {ok: 'text-success', warn: 'text-amber-700', err: 'text-error'}[tipo];
+  const ic = {ok: '✓', warn: '!', err: '✕'}[tipo];
+  return `<p class="flex items-start gap-2 text-sm font-medium ${cor}"><span class="font-bold">${ic}</span><span>${esc(texto)}</span></p>`;
+};
+let dadosAula = null;
+
+async function abrirSala(aulaId) {
+  const r = await fetch(`${BASE}aulas/${aulaId}/salas/`);
+  dadosAula = await r.json();
+  const a = dadosAula.aula;
+  document.getElementById('form-sala').action = `${BASE}aulas/${aulaId}/sala/`;
+  document.getElementById('sala-contexto').innerHTML =
+    `<p class="font-bold">${esc(a.turma)} · ${a.alunos} alunos</p><p class="opacity-80">${esc(a.disciplina)} · ${esc(a.professor)}</p><p class="opacity-80">${esc(a.quando)}</p>`;
+  document.getElementById('busca-sala').value = '';
+  desenharSalas();
+  selecionar(dadosAula.atual === null ? null : String(dadosAula.atual), false);
+  document.getElementById('janela-sala').showModal();
+}
+
+function desenharSalas() {
+  const termo = document.getElementById('busca-sala').value.toLowerCase();
+  const badge = {livre: 'badge-success', nao_comporta: 'badge-warning', ocupada: 'badge-error'};
+  let html = `<label class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-base-200"><input type="radio" name="sala" value="" class="radio radio-sm radio-primary" onchange="selecionar('')"><span class="text-sm opacity-70">Sem sala</span></label>`;
+  for (const s of dadosAula.salas) {
+    if (termo && !s.nome.toLowerCase().includes(termo) && !s.tipo.toLowerCase().includes(termo)) continue;
+    const ocupada = s.estado === 'ocupada';
+    html += `<label class="flex items-center gap-3 px-3 py-2 ${ocupada ? 'opacity-60' : 'cursor-pointer hover:bg-base-200'}">
+      <input type="radio" name="sala" value="${s.id}" class="radio radio-sm radio-primary" onchange="selecionar('${s.id}')">
+      <span class="font-bold text-sm w-14">${esc(s.nome)}</span><span class="text-xs opacity-70 flex-1">${esc(s.tipo)} · ${s.capacidade} lugares</span>
+      <span class="badge ${badge[s.estado]} badge-outline badge-sm whitespace-nowrap">${ocupada ? 'Ocupada · ' : ''}${esc(s.texto)}</span></label>`;
+  }
+  document.getElementById('lista-salas').innerHTML = html;
+}
+document.getElementById('busca-sala').addEventListener('input', () => { const v = document.querySelector('#lista-salas input:checked')?.value; desenharSalas(); if (v !== undefined) selecionar(v, false); });
+
+function selecionar(id, marcar = true) {
+  const radio = document.querySelector(`#lista-salas input[value="${id ?? ''}"]`);
+  if (radio) radio.checked = true;
+  const fb = document.getElementById('sala-feedback'), btn = document.getElementById('btn-salvar-sala'), aviso = document.getElementById('aviso-salvar');
+  aviso.textContent = '';
+  const s = dadosAula.salas.find(x => String(x.id) === String(id));
+  const q = dadosAula.aula.quando.toLowerCase(), alunos = dadosAula.aula.alunos;
+  if (!s) {
+    fb.innerHTML = id === '' && dadosAula.atual !== null ? linhaFeedback('warn', 'A aula ficará sem sala.') : '';
+    btn.disabled = !(id === '' && dadosAula.atual !== null);
+    return;
+  }
+  if (s.estado === 'ocupada') {
+    fb.innerHTML = `<div class="rounded-lg border border-error/30 bg-error/10 p-3 space-y-1">${linhaFeedback('err', `${s.nome} já está ocupada neste horário por ${s.texto}.`)}${linhaFeedback('warn', 'Escolha outra sala para evitar choque de horário.')}</div>`;
+    btn.disabled = true;
+  } else if (s.estado === 'nao_comporta') {
+    fb.innerHTML = `<div class="rounded-lg border border-warning/50 bg-warning/10 p-3 space-y-1">${linhaFeedback('ok', `Sala livre na ${q}.`)}${linhaFeedback('warn', `Não comporta a turma: ${alunos} alunos para ${s.capacidade} lugares.`)}</div>`;
+    btn.disabled = false; aviso.textContent = 'Você pode salvar mesmo assim.';
+  } else {
+    fb.innerHTML = `<div class="rounded-lg border border-success/30 bg-success/10 p-3 space-y-1">${linhaFeedback('ok', `Sala livre na ${q}.`)}${linhaFeedback('ok', `Comporta a turma: ${alunos} alunos para ${s.capacidade} lugares.`)}</div>`;
+    btn.disabled = String(s.id) === String(dadosAula.atual);
+  }
+}
+
+// ---- cópia
+const inputDestino = document.getElementById('data-destino');
+async function atualizarPrevia() {
+  const resumo = document.getElementById('copia-resumo'), btn = document.getElementById('btn-copiar'), ajuda = document.getElementById('copia-ajuda');
+  btn.disabled = true;
+  if (!inputDestino.value) { resumo.innerHTML = ''; return; }
+  const r = await (await fetch(`${BASE}copiar/previa/?data=${inputDestino.value}`)).json();
+  if (!r.ok) {
+    inputDestino.classList.add('input-error');
+    ajuda.className = 'text-xs text-error mt-1'; ajuda.textContent = r.erro; resumo.innerHTML = ''; return;
+  }
+  inputDestino.classList.remove('input-error');
+  ajuda.className = 'text-xs opacity-60 mt-1'; ajuda.textContent = 'Por padrão, a próxima segunda-feira. Escolha outra data se precisar.';
+  let html = `<p class="text-sm mb-2"><span class="opacity-70">Nome do novo ensalamento:</span> <strong>${esc(r.nome)}</strong></p>
+    <div class="rounded-lg border p-3 space-y-1 ${r.choques.length ? 'border-warning/50 bg-warning/10' : 'border-success/30 bg-success/10'}">
+    ${linhaFeedback('ok', `${r.copiadas} aulas serão copiadas com a sala.`)}
+    ${r.choques.length ? linhaFeedback('warn', `${r.choques.length} aulas ficarão sem sala por choque de horário.`) : ''}
+    ${r.sem_sala ? linhaFeedback('warn', `${r.sem_sala} aulas já estão sem sala e continuam pendentes.`) : ''}</div>`;
+  if (r.choques.length) html += `<ul class="text-xs opacity-80 mt-2 list-disc pl-5">${r.choques.map(c => `<li>${esc(c)}</li>`).join('')}</ul>`;
+  resumo.innerHTML = html; btn.disabled = false;
+}
+inputDestino.addEventListener('change', atualizarPrevia);
+function abrirCopia() { document.getElementById('janela-copia').showModal(); atualizarPrevia(); }
+</script>
+{% endblock %}

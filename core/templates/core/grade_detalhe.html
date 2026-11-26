@@ -1,0 +1,74 @@
+{% extends "app.html" %}{% load ui %}
+{% block titulo %}{{ grade.nome }}{% endblock %}
+{% block conteudo %}
+<div class="mb-6">
+  <p class="text-xs opacity-60 mb-1"><a href="{% url 'grades_lista' %}" class="hover:underline">Grades horárias</a> / {{ grade.nome }}</p>
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div><h1 class="text-2xl font-bold">{{ grade.nome }}</h1><p class="text-sm opacity-70 mt-1">Clique em um horário vazio para adicionar uma aula, ou em uma aula para editá-la.</p></div>
+    <div class="flex gap-2"><a href="{% url 'grades_editar' grade.pk %}" class="btn btn-outline btn-sm">Editar dados</a>
+      <a href="?nova=1" class="btn btn-primary btn-sm">{% icone "plus" "w-4 h-4" %} Adicionar aula</a></div>
+  </div>
+</div>
+<div class="card bg-base-100 border border-base-300 mb-4"><div class="card-body p-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+  <div><p class="opacity-60 text-xs">Curso</p><p class="font-bold">{{ grade.curso }}</p></div>
+  <div><p class="opacity-60 text-xs">Semestre</p><p class="font-bold">{{ grade.semestre }}</p></div>
+  <div><p class="opacity-60 text-xs">Turmas</p><p class="font-bold">{{ turmas|length }}</p></div>
+  <div><p class="opacity-60 text-xs">Aulas</p><p class="font-bold">{{ total_aulas }}</p></div>
+  <div><p class="opacity-60 text-xs">Situação</p><span class="badge {% if grade.ativo %}badge-success{% else %}badge-ghost{% endif %} badge-outline font-semibold">{{ grade.ativo|yesno:"Ativo,Inativo" }}</span></div>
+</div></div>
+{% if not turmas %}
+  <div class="alert">{% icone "warn" %}<span>Nenhuma turma ativa de {{ grade.curso }} no semestre {{ grade.semestre }}. <a class="link link-primary" href="{% url 'turmas_novo' %}">Cadastre uma turma</a> para montar a grade.</span></div>
+{% else %}
+<div class="card bg-base-100 border border-base-300 overflow-x-auto">
+  <table class="table table-sm min-w-[900px]">
+    <thead><tr class="bg-base-200"><th class="w-24">Dia</th><th class="w-32">Horário</th>{% for t in turmas %}<th>{{ t.nome }}<span class="block font-normal opacity-60">{{ t.quantidade_alunos }} alunos</span></th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for l in linhas %}
+      <tr class="{% if l.primeira %}border-t-2 border-base-300{% endif %}">
+        {% if l.primeira %}<th rowspan="2" class="bg-primary/5 text-primary align-middle">{{ l.dia_nome }}</th>{% endif %}
+        <td class="whitespace-nowrap opacity-70">{{ l.horario_nome }}</td>
+        {% for c in l.celulas %}<td>
+          {% if c.aula %}
+            <a href="{% url 'aula_editar' grade.pk c.aula.pk %}" class="block rounded-lg border-l-4 border-primary bg-base-200/60 px-3 py-2 hover:bg-primary/10">
+              <span class="font-bold text-primary text-sm">{{ c.aula.unidade.codigo }}</span>
+              <span class="block text-xs opacity-70">{{ c.aula.professor }}</span></a>
+          {% else %}
+            <a href="?nova=1&turma={{ c.turma.pk }}&dia={{ c.dia }}&horario={{ c.horario }}" class="flex items-center justify-center gap-1 rounded-lg border border-dashed border-base-300 py-3 text-xs opacity-60 hover:opacity-100 hover:border-primary hover:text-primary">{% icone "plus" "w-3.5 h-3.5" %} Adicionar</a>
+          {% endif %}
+        </td>{% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if form %}
+<dialog id="janela-aula" class="modal modal-open">
+  <div class="modal-box max-w-lg">
+    <a href="{% url 'grade_detalhe' grade.pk %}" class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3" aria-label="Fechar">{% icone "x" "w-4 h-4" %}</a>
+    <h3 class="font-bold text-lg">{% if aula_editando %}Editar aula{% else %}Adicionar aula{% endif %}</h3>
+    <p class="text-xs opacity-60 mb-4">{{ grade.nome }}</p>
+    <form method="post" action="{% if aula_editando %}{% url 'aula_editar' grade.pk aula_editando.pk %}{% else %}{% url 'aula_nova' grade.pk %}{% endif %}" novalidate class="space-y-3">
+      {% csrf_token %}
+      {% if form.errors %}<div class="alert alert-error text-sm py-2">{% icone "x" "w-4 h-4" %}<span>Não foi possível salvar a aula. Corrija os campos destacados.{% for e in form.non_field_errors %} {{ e }}{% endfor %}</span></div>{% endif %}
+      <div class="grid grid-cols-2 gap-3">
+        {% for campo in form %}<div class="{% if campo.name == 'turma' or campo.name == 'unidade' or campo.name == 'professor' %}col-span-2{% endif %}">{% include "partials/campo.html" %}</div>{% endfor %}
+      </div>
+      <div class="modal-action items-center">
+        {% if aula_editando %}<button type="button" class="btn btn-ghost text-error mr-auto" onclick="document.getElementById('excluir-aula').showModal()">{% icone "trash" "w-4 h-4" %} Excluir</button>{% endif %}
+        <a href="{% url 'grade_detalhe' grade.pk %}" class="btn">Cancelar</a><button class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+{% if aula_editando %}
+<dialog id="excluir-aula" class="modal"><div class="modal-box">
+  <h3 class="font-bold text-lg">Excluir aula?</h3>
+  <p class="py-3 text-sm opacity-80">{{ aula_editando.unidade }} · {{ aula_editando.turma }} · {{ aula_editando.get_dia_semana_display }} {{ aula_editando.horario_texto }}. As salas informadas para esta aula nos ensalamentos também serão removidas.</p>
+  <form method="post" action="{% url 'aula_excluir' grade.pk aula_editando.pk %}" class="modal-action">{% csrf_token %}
+    <button type="button" class="btn" onclick="this.closest('dialog').close()">Cancelar</button><button class="btn btn-error">Excluir aula</button></form>
+</div></dialog>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,8 @@
+{% load ui %}<div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+  <div>
+    {% if trilha %}<p class="text-xs opacity-60 mb-1">{{ trilha }}</p>{% endif %}
+    <h1 class="text-2xl font-bold">{{ titulo }}</h1>
+    {% if subtitulo %}<p class="text-sm opacity-70 mt-1">{{ subtitulo }}</p>{% endif %}
+  </div>
+  {% if url_botao %}<a href="{{ url_botao }}" class="btn btn-primary">{% icone "plus" %} {{ texto_botao }}</a>{% endif %}
+</div>
